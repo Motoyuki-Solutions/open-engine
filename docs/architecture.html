@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Engine — Architecture (Canonical v2)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0e14; --bg2:#11151d; --panel:#161b26; --panel2:#1c2330;
+    --line:#222a38; --line2:#2c3647;
+    --ink:#e7ecf3; --ink2:#aab4c5; --ink3:#6c7891;
+    --accent:#5b9dff; --accent2:#7c5cff;
+    --green:#3ddc84; --amber:#f5c14b; --red:#ff6b6b; --grey:#8993a5; --purple:#c08bff; --teal:#00d6c4; --indigo:#9b7cff; --lin:#7b86d8;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 5% 120px}
+  header{border-bottom:1px solid var(--line);padding:64px 5% 40px;max-width:1100px;margin:0 auto}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin:0 0 16px}
+  h1{font-family:'Source Serif 4',serif;font-weight:600;font-size:clamp(32px,5vw,50px);line-height:1.08;margin:0 0 18px;letter-spacing:-.02em}
+  h1 .dim{color:var(--ink3);font-weight:400}
+  .lede{font-size:17px;color:var(--ink2);max-width:64ch;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:28px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink3)}
+  .meta span b{color:var(--ink2);font-weight:500}
+  .badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 8px;border-radius:20px;background:rgba(124,92,255,.15);color:var(--accent2);border:1px solid rgba(124,92,255,.3);margin-left:10px;vertical-align:middle;letter-spacing:.05em}
+  nav{position:sticky;top:0;z-index:10;background:rgba(11,14,20,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav .inner{max-width:1100px;margin:0 auto;padding:10px 5%;display:flex;gap:20px;overflow-x:auto;scrollbar-width:none}
+  nav .inner::-webkit-scrollbar{display:none}
+  nav a{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink3);text-decoration:none;white-space:nowrap;transition:color .15s}
+  nav a:hover{color:var(--ink)}
+  section{padding:52px 0 0}
+  section + section{border-top:1px solid var(--line)}
+  h2{font-family:'Source Serif 4',serif;font-weight:600;font-size:28px;margin:0 0 8px;letter-spacing:-.01em}
+  .secnum{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);margin:0 0 16px;letter-spacing:.1em}
+  h3{font-size:17px;font-weight:600;margin:32px 0 10px;color:var(--ink)}
+  p{margin:0 0 14px;color:var(--ink2)}
+  p strong,li strong,td strong{color:var(--ink);font-weight:600}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  ul,ol{margin:0 0 14px;padding-left:22px;color:var(--ink2)}
+  li{margin:5px 0}
+  code{font-family:'JetBrains Mono',monospace;font-size:13px;background:var(--panel2);padding:2px 6px;border-radius:4px;color:var(--accent)}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;overflow-x:auto;margin:0 0 16px}
+  pre code{background:none;padding:0;color:var(--ink);font-size:12.5px;line-height:1.65}
+  .callout{border-radius:10px;padding:16px 18px;margin:0 0 16px;border:1px solid;font-size:14px}
+  .callout .ch{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;font-weight:600}
+  .callout p{margin:0 0 7px;font-size:14px}.callout p:last-child{margin:0}
+  .co-warn{background:rgba(245,193,75,.07);border-color:rgba(245,193,75,.3)}.co-warn .ch{color:var(--amber)}
+  .co-info{background:rgba(91,157,255,.07);border-color:rgba(91,157,255,.3)}.co-info .ch{color:var(--accent)}
+  .co-ok{background:rgba(61,220,132,.07);border-color:rgba(61,220,132,.3)}.co-ok .ch{color:var(--green)}
+  .co-note{background:rgba(124,92,255,.07);border-color:rgba(124,92,255,.3)}.co-note .ch{color:var(--accent2)}
+  table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:13px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);font-weight:500;background:var(--bg2)}
+  td{color:var(--ink2)}td strong{color:var(--ink)}
+  tbody tr:hover{background:rgba(91,157,255,.03)}
+  .pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:1.5px 8px;border-radius:20px;border:1px solid var(--line2);white-space:nowrap}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:16px 0}
+  .flow .step{font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:5px 11px;border-radius:6px;background:var(--panel);border:1px solid var(--line2);color:var(--ink)}
+  .flow .arr{color:var(--ink3);font-size:12px}
+  .stack{display:grid;gap:9px;margin:18px 0}
+  .layer{display:grid;grid-template-columns:170px 1fr 210px;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--panel);align-items:center}
+  .layer .nm{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--ink)}
+  .layer .nm span{color:var(--ink3);font-weight:400;display:block;font-size:10.5px;margin-top:2px}
+  .layer .ro{font-size:13.5px;color:var(--ink2)}
+  .layer .wh{font-size:11.5px;color:var(--ink3);text-align:right}
+  .runner{counter-reset:step;margin:18px 0;padding:0;list-style:none}
+  .runner li{counter-increment:step;position:relative;padding:12px 16px 12px 52px;margin:0 0 8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink2);font-size:13.5px}
+  .runner li::before{content:counter(step);position:absolute;left:14px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#0b0e14;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .runner li b{color:var(--ink)}
+  .runner li.stop{border-left:3px solid var(--amber)}
+  .rcat{margin:20px 0}
+  .rcat h4{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin:0 0 8px;font-weight:500}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:5px 11px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);color:var(--ink2)}
+  .chip .sw{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:6px;vertical-align:middle}
+  .tldr{background:linear-gradient(135deg,rgba(91,157,255,.08),rgba(124,92,255,.05));border:1px solid rgba(91,157,255,.25);border-radius:12px;padding:22px 24px;margin:0 0 8px}
+  .tldr p{font-size:15.5px;color:var(--ink);margin:0}
+  .qcard{border:1px solid var(--line);border-left:3px solid var(--accent2);border-radius:0 10px 10px 0;padding:14px 18px;margin:0 0 12px;background:var(--panel)}
+  .qcard .qn{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--accent2);letter-spacing:.07em}
+  .qcard p{margin:5px 0 0;font-size:13.5px}
+  footer{border-top:1px solid var(--line);padding:36px 5%;max-width:1100px;margin:0 auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink3);line-height:1.8}
+  footer b{color:var(--ink2);font-weight:500}
+  @media(max-width:680px){.layer{grid-template-columns:1fr;gap:6px}.layer .wh{text-align:left}.runner li{padding-left:48px}}
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Architecture · Canonical v2 · for review</p>
+  <h1>Open Engine <span class="dim">— Architecture</span><span class="badge">v2</span></h1>
+  <p class="lede">Linear is the shared task queue. Every task is an issue with a bracket-coded title and a 7-part task record. Each runtime runs an 11-step queue runner, leaves receipts (15 canonical tokens), and updates one status ledger — then stops after exactly one task.</p>
+  <div class="meta">
+    <span><b>Author</b> Bolt</span><span><b>Routed by</b> Eos</span>
+    <span><b>Date</b> 2026-07-04</span><span><b>Source</b> Nate Jones, canonical v2</span>
+    <span><b>Supersedes</b> Paperclip</span>
+  </div>
+</header>
+
+<nav><div class="inner">
+  <a href="#tldr">0 · TL;DR</a><a href="#linear">1 · Linear</a><a href="#record">2 · Task Record</a>
+  <a href="#receipts">3 · Receipts</a><a href="#runner">4 · Queue Runner</a><a href="#ledger">5 · Ledger</a>
+  <a href="#skills">6 · Standing Skills</a><a href="#private">7 · Private Context</a><a href="#naming">8 · Naming</a>
+  <a href="#agents">9 · Agents</a><a href="#smoke">10 · Smoke Tests</a><a href="#paperclip">11 · Paperclip</a>
+  <a href="#ops">12 · Ops</a><a href="#questions">13 · Questions</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="tldr">
+  <p class="secnum">SECTION 0</p>
+  <h2>TL;DR</h2>
+  <div class="tldr"><p>Linear is the shared task queue. Every task is a Linear issue whose <strong>title carries brackets</strong> (<code>[agent instructions][&lt;agent-code&gt;][task] …</code>) and whose <strong>description is a 7-part task record</strong>. Issues carry the <code>agent-instructions</code> label. Each runtime executes an <strong>11-step queue runner</strong> that checks the ledger, does standing preflight, resumes blocked/held issues, follows up on delegations, and otherwise claims the oldest eligible <code>Agent Todo</code> issue — then <strong>stops after exactly one task</strong>. Every state change is recorded with a <strong>receipt</strong> (one of 15 canonical tokens) as a comment + label + status patch. Each agent owns <strong>one AGENT STATUS ledger comment</strong> it updates in place every run.</p></div>
+  <p style="margin-top:16px">We start with <strong>one task, one agent, one blocker rule, one receipt</strong> and run all 4 canonical smoke tests before scaling.</p>
+</section>
+
+<section id="linear">
+  <p class="secnum">SECTION 1</p>
+  <h2>Linear Project Setup</h2>
+  <table>
+    <thead><tr><th>Field</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Team</td><td><strong>Motoyuki-dev</strong> · key <code>MOT</code> · id <code>e9848ffc-af19-4bf6-a567-29e9557282a3</code></td></tr>
+      <tr><td>Project (new)</td><td><strong>Open Engine</strong> — the coordination substrate, not a product backlog</td></tr>
+      <tr><td>Control label</td><td><code>agent-instructions</code> — required on every Open Engine issue (eligibility gate)</td></tr>
+      <tr><td>Existing (untouched)</td><td>GB10 Voice+OCR Pipeline; OB1 / Open Brain Stack Remediation</td></tr>
+    </tbody>
+  </table>
+  <h3>Status workflow</h3>
+  <div class="flow">
+    <span class="step">Standing</span><span class="arr">→</span><span class="step">Agent Todo</span><span class="arr">→</span>
+    <span class="step">Agent Working</span><span class="arr">→</span><span class="step">Agent Needs Input</span><span class="arr">→</span>
+    <span class="step">Agent Review</span><span class="arr">→</span><span class="step">Agent Done</span>
+  </div>
+  <div class="callout co-warn"><div class="ch">⚠ Constraint</div><p>The Linear MCP server exposes <code>list_issue_statuses</code>/<code>get_issue_status</code> but <strong>no status-creation action</strong>. Create the 6 statuses in the Linear UI (Workflow → Statuses) or via GraphQL. <code>scripts/linear/setup.py</code> cannot. See §13 Q1.</p></div>
+  <h3>Receipt labels created by setup (14 of 15 tokens — AGENT STATUS has no label)</h3>
+  <div class="rcat"><h4>task-lifecycle</h4><div class="chips">
+    <span class="chip"><span class="sw" style="background:#4EA7FC"></span>AGENT CLAIMED</span>
+    <span class="chip"><span class="sw" style="background:#2ECC71"></span>AGENT DONE</span>
+    <span class="chip"><span class="sw" style="background:#EB5757"></span>AGENT BLOCKED</span>
+    <span class="chip"><span class="sw" style="background:#2ECC71"></span>AGENT UNBLOCKED</span>
+    <span class="chip"><span class="sw" style="background:#F5C14B"></span>AGENT HUMAN HOLD</span>
+    <span class="chip"><span class="sw" style="background:#F5C14B"></span>AGENT HUMAN ANSWERED</span>
+    <span class="chip"><span class="sw" style="background:#BB87FC"></span>AGENT RESUMED</span>
+    <span class="chip"><span class="sw" style="background:#8993A5"></span>AGENT FAILED</span>
+  </div></div>
+  <div class="rcat"><h4>standing-context</h4><div class="chips">
+    <span class="chip"><span class="sw" style="background:#00C7B7"></span>AGENT APPLIED</span>
+  </div></div>
+  <div class="rcat"><h4>skill</h4><div class="chips">
+    <span class="chip"><span class="sw" style="background:#7C5CFF"></span>AGENT SKILL SUBSCRIBED</span>
+    <span class="chip"><span class="sw" style="background:#7C5CFF"></span>AGENT SKILL INSTALLED</span>
+    <span class="chip"><span class="sw" style="background:#7C5CFF"></span>AGENT SKILL UPDATED</span>
+    <span class="chip"><span class="sw" style="background:#8993A5"></span>AGENT SKILL DECLINED</span>
+  </div></div>
+  <div class="rcat"><h4>delegation</h4><div class="chips">
+    <span class="chip"><span class="sw" style="background:#5E6AD2"></span>AGENT FOLLOW-UP</span>
+  </div></div>
+  <div class="rcat"><h4>ledger</h4><div class="chips">
+    <span class="chip"><span class="sw" style="background:transparent;border:1px dashed var(--line2)"></span>AGENT STATUS (no label — in-place comment)</span>
+  </div></div>
+  <h3>Standing issues created by setup (2)</h3>
+  <ol>
+    <li><strong>Status ledger</strong> — <code>[agent instructions][all agents][standing_status] Open Agent Engine status ledger</code></li>
+    <li><strong>Optional skill directory</strong> — <code>[agent instructions][all agents][optional_standing_skill_directory] Open Engine optional skill directory</code></li>
+  </ol>
+  <p>Both stay in <code>Standing</code> forever. Each agent records their IDs in its private SKILL.md.</p>
+</section>
+
+<section id="record">
+  <p class="secnum">SECTION 2</p>
+  <h2>The 7-Part Task Record</h2>
+  <ol>
+    <li><strong>Requester</strong> — who asked (human or agent)</li>
+    <li><strong>Desired outcome</strong> — what "done" looks like, as an outcome</li>
+    <li><strong>Sources</strong> — refs, docs, links, prior issue IDs (state that travels)</li>
+    <li><strong>Acceptance criteria</strong> — testable definition of done (checkboxes)</li>
+    <li><strong>Boundaries</strong> — what is NOT in scope</li>
+    <li><strong>Blocker rule</strong> — what to do when stuck (on-Linear → BLOCKED; off-Linear → HOLD)</li>
+    <li><strong>Receipts</strong> — filled by agents as work progresses</li>
+  </ol>
+  <h3>Title format (exact)</h3>
+  <pre><code>[agent instructions][&lt;agent-code&gt;][task] &lt;short outcome&gt;</code></pre>
+  <p>The <strong>second bracket</strong> is the runtime that may claim it (enforced by runner step 7). <code>[all agents]</code> is used only for standing/ledger/directory issues, never for tasks.</p>
+</section>
+
+<section id="receipts">
+  <p class="secnum">SECTION 3</p>
+  <h2>Receipts — 15 Canonical Tokens</h2>
+  <p>Every receipt (except STATUS) is a <strong>three-part write</strong>: comment + label + status patch. <code>scripts/receipts/format.py</code> formats each; <code>scripts/workflow/transitions.py</code> maps each to its writes.</p>
+  <table>
+    <thead><tr><th>Receipt</th><th>Comment body</th><th>Label</th><th>Status →</th><th>Ledger</th></tr></thead>
+    <tbody>
+      <tr><td><strong>AGENT CLAIMED</strong></td><td>plan</td><td>+CLAIMED</td><td>Agent Working</td><td>claimed ID</td></tr>
+      <tr><td><strong>AGENT DONE</strong> <span class="pill">no review</span></td><td>outcome+evidence</td><td>+DONE</td><td>Agent Done</td><td>completed ID</td></tr>
+      <tr><td><strong>AGENT DONE</strong> <span class="pill">needs review</span></td><td>outcome+evidence</td><td>+DONE</td><td>Agent Review</td><td>completed ID</td></tr>
+      <tr><td><strong>AGENT BLOCKED</strong></td><td>one question</td><td>+BLOCKED</td><td>Agent Needs Input</td><td>blocked ID</td></tr>
+      <tr><td><strong>AGENT UNBLOCKED</strong></td><td>answer summary</td><td>+UNBLOCKED</td><td>— (RESUMED follows)</td><td>—</td></tr>
+      <tr><td><strong>AGENT HUMAN HOLD</strong></td><td>need + why</td><td>+HOLD</td><td>Agent Needs Input</td><td>holding ID</td></tr>
+      <tr><td><strong>AGENT HUMAN ANSWERED</strong></td><td>human answer</td><td>+ANSWERED</td><td>— (RESUMED follows)</td><td>—</td></tr>
+      <tr><td><strong>AGENT RESUMED</strong></td><td>after + what changed</td><td>+RESUMED</td><td>Agent Working</td><td>resumed ID</td></tr>
+      <tr><td><strong>AGENT FAILED</strong></td><td>failure + last safe step + retry count</td><td>+FAILED</td><td>Agent Review</td><td>failed ID</td></tr>
+      <tr><td><strong>AGENT APPLIED</strong></td><td>context version + local change</td><td>+APPLIED</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>AGENT SKILL SUBSCRIBED</strong></td><td>skill@ver, scope, approval</td><td>+SUBSCRIBED</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>AGENT SKILL INSTALLED</strong></td><td>skill@ver, scope, action</td><td>+INSTALLED</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>AGENT SKILL UPDATED</strong></td><td>skill@ver, same-scope</td><td>+UPDATED</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>AGENT SKILL DECLINED</strong></td><td>skill@ver, reason</td><td>+DECLINED</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>AGENT FOLLOW-UP</strong></td><td>delegated issue + state change</td><td>+FOLLOW-UP</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>AGENT STATUS</strong></td><td>full ledger body</td><td><em>no label</em></td><td>— (ledger stays Standing)</td><td>this IS the ledger</td></tr>
+    </tbody>
+  </table>
+  <div class="callout co-note"><div class="ch">📝 Receipt count note (Q for Dylan)</div><p>The brief header said "16 receipts" but enumerated <strong>15</strong> tokens. This doc implements all 15 faithfully. If a 16th canonical token exists in the full spec, send it and I'll add it.</p></div>
+  <div class="callout co-ok"><div class="ch">Paperclip lesson #2 — resolved by design</div><p>No separate activity-log DB — Linear's comment thread <em>is</em> the log, and Linear mints its own comment IDs. No FK constraint, no synthetic run_id. We record a run context (thread ID + model) as provenance.</p></div>
+</section>
+
+<section id="runner">
+  <p class="secnum">SECTION 4</p>
+  <h2>The Queue Runner — 11 Steps</h2>
+  <p>The exact prompt each runtime executes every run. <strong>One run handles exactly one task issue.</strong></p>
+  <ol class="runner">
+    <li><b>Open ledger, mark checking.</b> Find your AGENT STATUS comment; update in place — Last queue result = checking, Last heartbeat = now.</li>
+    <li><b>Mandatory standing preflight.</b> Compare local context versions vs standing issues. Install/adapt locally <em>first</em>, then leave AGENT APPLIED only after actually installing locally.</li>
+    <li><b>Optional standing skill preflight.</b> Check only skills already installed/subscribed. Apply same-scope updates automatically (AGENT SKILL UPDATED). <b>Do not browse/install unapproved skills</b> during routine runs.</li>
+    <li class="stop"><b>Check AGENT HUMAN HOLD issues.</b> If one now shows AGENT HUMAN ANSWERED → move to Agent Working, leave AGENT RESUMED, finish it, <b>stop</b>.</li>
+    <li class="stop"><b>Check AGENT BLOCKED issues.</b> If one now has its answer on the same issue → move to Agent Working, leave AGENT UNBLOCKED then AGENT RESUMED, finish it, <b>stop</b>.</li>
+    <li><b>Check delegated issues.</b> Leave AGENT FOLLOW-UP on your issue if any delegated issue's state changed.</li>
+    <li><b>Claim the oldest eligible Agent Todo issue.</b> Eligible = agent-instructions label + [agent instructions] in title + your agent code as the second bracket. Move to Agent Working, leave AGENT CLAIMED, <b>re-read the issue</b>.</li>
+    <li><b>Do only scoped work.</b> Done, no human judgment → AGENT DONE + Agent Done. Done, needs review → AGENT DONE + Agent Review.</li>
+    <li class="stop"><b>If blocked:</b> answer on Linear → AGENT BLOCKED (one question) + Agent Needs Input + ledger "blocked ID", stop. Answer in human's thread → AGENT HUMAN HOLD + Agent Needs Input + ledger "holding ID", stop.</li>
+    <li><b>If execution fails unexpectedly</b> → AGENT FAILED with last safe step + retry count.</li>
+    <li><b>Update ledger and stop</b> after exactly one task issue.</li>
+  </ol>
+  <h3>Eligibility (step 7), formalized</h3>
+  <p>An issue is eligible iff <strong>all</strong> hold: label set includes <code>agent-instructions</code>; title contains <code>[agent instructions]</code>; the title's second bracket equals the runtime's agent code; status is <code>Agent Todo</code>. Encoded in <code>is_eligible_for_claim()</code> (self-tested).</p>
+</section>
+
+<section id="ledger">
+  <p class="secnum">SECTION 5</p>
+  <h2>The Status Ledger</h2>
+  <p>One standing issue: <code>[agent instructions][all agents][standing_status] Open Agent Engine status ledger</code>. Each agent owns <strong>exactly one</strong> top-level <code>AGENT STATUS</code> comment, updated <strong>in place</strong> every run (never a fresh comment).</p>
+  <pre><code>AGENT STATUS
+Agent: &lt;agent-code&gt;
+Human/operator: &lt;name&gt;
+Runtime: &lt;Codex | Claude | other&gt;
+Automation: &lt;automation name or manual&gt;
+Automation state: &lt;installed | manual-required | blocked | paused&gt;
+Last heartbeat: &lt;ISO8601&gt;
+Last queue result: &lt;checking | none | claimed ID | completed ID | blocked ID | holding ID | resumed ID | failed ID&gt;
+Last successful run: &lt;ISO8601 or unknown&gt;
+Local context: &lt;engine version&gt;; &lt;routing map version&gt;
+Optional skills: &lt;none or skill-id@version subscribed&gt;
+Notes: &lt;none or short blocker&gt;</code></pre>
+</section>
+
+<section id="skills">
+  <p class="secnum">SECTION 6</p>
+  <h2>Standing Skills Architecture</h2>
+  <p>Optional standing skills are <strong>discoverable from the directory but NOT auto-installed</strong>.</p>
+  <ul>
+    <li>First install requires <strong>human approval in that runtime's agent thread</strong>.</li>
+    <li>Approval <strong>subscribes</strong> the runtime to future <strong>same-scope</strong> updates (auto-applied at step 3).</li>
+    <li><strong>Scope expansion needs fresh approval.</strong></li>
+  </ul>
+  <h3>Skill receipts (the 4 tokens)</h3>
+  <table>
+    <thead><tr><th>Token</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td><strong>AGENT SKILL SUBSCRIBED</strong></td><td>Human approved first install in their thread</td></tr>
+      <tr><td><strong>AGENT SKILL INSTALLED</strong></td><td>Runtime actually installed/adapted locally</td></tr>
+      <tr><td><strong>AGENT SKILL UPDATED</strong></td><td>Subscribed skill got a same-scope local update (automatic)</td></tr>
+      <tr><td><strong>AGENT SKILL DECLINED</strong></td><td>Human declined/deferred</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="private">
+  <p class="secnum">SECTION 7</p>
+  <h2>Private Context (per-runtime SKILL.md)</h2>
+  <p>Each runtime keeps a <strong>local</strong> private context file (not in the repo, not in Linear): e.g. <code>~/.hermes/skills/open-engine/SKILL.md</code> for Eos. It holds: engine version, agent code, Linear team/project, label, allowed sources, status ledger issue ID, optional skill directory ID, the runtime's own AGENT STATUS comment ID, installed/subscribed skills, and safety boundaries. Plus a private Standing setup issue listing what to install.</p>
+  <div class="callout co-info"><div class="ch">Hyperagent mapping</div><p>For Hyperagent agents (Bolt), the equivalent is a pinned memory + this repo's docs. The SKILL.md format is the canonical structure; map it onto whatever private-context mechanism the runtime provides.</p></div>
+</section>
+
+<section id="naming">
+  <p class="secnum">SECTION 8</p>
+  <h2>Naming Conventions (exact)</h2>
+  <table>
+    <thead><tr><th>Issue type</th><th>Title pattern</th></tr></thead>
+    <tbody>
+      <tr><td>Task</td><td><code>[agent instructions][&lt;agent-code&gt;][task] &lt;short outcome&gt;</code></td></tr>
+      <tr><td>Standing setup</td><td><code>[agent instructions][all agents][standing_skill] Install Open Engine core context v1</code></td></tr>
+      <tr><td>Status ledger</td><td><code>[agent instructions][all agents][standing_status] Open Engine status ledger</code></td></tr>
+      <tr><td>Optional directory</td><td><code>[agent instructions][all agents][optional_standing_skill_directory] Open Engine optional skill directory</code></td></tr>
+    </tbody>
+  </table>
+  <p>Label on all: <code>agent-instructions</code>.</p>
+</section>
+
+<section id="agents">
+  <p class="secnum">SECTION 9</p>
+  <h2>Agent Integration Pattern</h2>
+  <table>
+    <thead><tr><th>Agent</th><th>Code</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Eos</strong></td><td><code>eos</code></td><td>Routing / ops — creates, assigns, reviews at Agent Review, owns the backlog. Does not do execution tasks.</td></tr>
+      <tr><td><strong>Bolt</strong></td><td><code>bolt</code></td><td>Primary builder — claims &amp; completes execution tasks</td></tr>
+      <tr><td><strong>Zephyr</strong></td><td><code>zephyr</code></td><td>Local builder — claims &amp; completes local-build-flavored tasks</td></tr>
+    </tbody>
+  </table>
+  <h3>Hard rules (in each runtime's private context)</h3>
+  <ul>
+    <li>One task issue per run.</li>
+    <li>Never post a fresh AGENT STATUS — edit in place.</li>
+    <li>Never claim an issue whose second bracket isn't your code.</li>
+    <li>Patch status on every receipt that implies a status change (Paperclip #1).</li>
+    <li>Do not browse/install unapproved skills on routine runs.</li>
+    <li>Do not cross the task record's §5 Boundaries.</li>
+    <li>Auth by creator, not assignee (Paperclip #3).</li>
+  </ul>
+  <h3>Handoffs &amp; parent/child (Paperclip #4)</h3>
+  <p>A handoff = one agent's AGENT DONE becomes another's Agent Todo. The reviewer (Eos) creates the follow-on, linking the completed one in §3 Sources. Parent/child use Linear <code>parentId</code> + <code>blocks</code>/<code>blockedBy</code> <strong>explicitly</strong> — parents close explicitly at review.</p>
+</section>
+
+<section id="smoke">
+  <p class="secnum">SECTION 10</p>
+  <h2>Smoke Tests (4 canonical)</h2>
+  <ol>
+    <li><strong>Basic</strong> — claim, done, status, ledger; runner stops after one task. <em>examples/smoke-test-1-basic.md</em></li>
+    <li><strong>Blocked-resume</strong> — incomplete issue → AGENT BLOCKED → answer on issue → AGENT UNBLOCKED → AGENT RESUMED → AGENT DONE. <em>examples/smoke-test-2-blocked-resume.md</em></li>
+    <li><strong>Human-hold</strong> — ask for local permission in agent thread → AGENT HUMAN HOLD → AGENT HUMAN ANSWERED → completion. <em>examples/smoke-test-3-human-hold.md</em></li>
+    <li><strong>Optional directory</strong> — ask what skills are available → summary without install. <em>examples/smoke-test-4-optional-directory.md</em></li>
+  </ol>
+  <p>All four must pass before scaling.</p>
+</section>
+
+<section id="paperclip">
+  <p class="secnum">SECTION 11</p>
+  <h2>Paperclip Postmortem — Applied</h2>
+  <table>
+    <thead><tr><th>#</th><th>Lesson</th><th>How v2 satisfies it</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Agents MUST PATCH status on completion</td><td>Every receipt is a three-part write; runner enforces it.</td></tr>
+      <tr><td>2</td><td>Real run_id­s required (FK)</td><td>No separate activity-log DB; Linear thread is the log; run context = provenance.</td></tr>
+      <tr><td>3</td><td>Auth by creator, not assignee</td><td>§9.4.</td></tr>
+      <tr><td>4</td><td>Parents don't auto-close; explicit blocks</td><td>Explicit parentId + blocks/blockedBy; parents close at review.</td></tr>
+      <tr><td>5</td><td>Specs need Deployment &amp; Ops section</td><td>§12.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="ops">
+  <p class="secnum">SECTION 12</p>
+  <h2>Deployment &amp; Operations</h2>
+  <div class="callout co-info"><div class="ch">Not a deployed service</div><p>Open Engine is: (1) a Linear configuration (project + 6 statuses + agent-instructions label + 14 receipt labels + 2 standing issues), (2) this GitHub repo, (3) a private SKILL.md per runtime + the queue-runner prompt. <strong>No server, no cron, no database for the engine itself.</strong> Linear is the database. The runtimes are the executor.</p></div>
+  <table>
+    <thead><tr><th>Need</th><th>Do this</th></tr></thead>
+    <tbody>
+      <tr><td>Create project + labels + ledger + directory</td><td><code>python3 scripts/linear/setup.py</code></td></tr>
+      <tr><td>Create the 6 statuses</td><td>Linear UI (Workflow → Statuses) — MCP cannot</td></tr>
+      <tr><td>Create a task</td><td>Eos fills templates/task-record.md; creates via linear__save_issue</td></tr>
+      <tr><td>Review blocked/held</td><td>Filter: labels AGENT BLOCKED / AGENT HUMAN HOLD</td></tr>
+      <tr><td>Review completed</td><td>Filter: status Agent Review</td></tr>
+      <tr><td>Audit a task</td><td>linear__list_comments — the thread is the audit log</td></tr>
+      <tr><td>Add a runtime</td><td>Create its SKILL.md; embed queue-runner prompt; ensure tools; it creates its AGENT STATUS on first run</td></tr>
+    </tbody>
+  </table>
+  <h3>Maintenance</h3>
+  <p>Quarterly: review last 10 tasks (7 parts right? receipts left?); confirm 14 labels exist &amp; used; confirm each runtime's SKILL.md + runner prompt current; confirm each runtime has exactly one AGENT STATUS comment; retire/fix drifted runtimes.</p>
+</section>
+
+<section id="questions">
+  <p class="secnum">SECTION 13</p>
+  <h2>Open Questions for Eos &amp; Dylan</h2>
+  <div class="qcard"><div class="qn">Q1 · STATUS CREATION</div><p>Create the 6 Open Engine statuses in Linear UI (~2 min), or run smoke tests on existing statuses and upgrade later? I recommend creating them.</p></div>
+  <div class="qcard"><div class="qn">Q2 · GITHUB CONNECTION — STILL PENDING</div><p>GitHub MCP available but not OAuth-connected on Bolt's account. Repo fully written &amp; tested locally but cannot be pushed until linked. Connect card surfaced earlier.</p></div>
+  <div class="qcard"><div class="qn">Q3 · RECEIPT COUNT: 15 vs 16</div><p>Brief header said "16 receipts" but enumerated 15. I implemented all 15. If a 16th canonical token exists, send it (token, meaning, category, label color) and I'll add it.</p></div>
+  <div class="qcard"><div class="qn">Q4 · PROJECT STRUCTURE</div><p>One Open Engine project (assumed) vs a project per agent? Confirm.</p></div>
+  <div class="qcard"><div class="qn">Q5 · REVIEWER</div><p>Eos as sole reviewer at Agent Review, or Dylan also? Affects notifications.</p></div>
+  <div class="qcard"><div class="qn">Q6 · WHO POSTS AGENT HUMAN ANSWERED?</div><p>The human answers in their thread; the answer must surface on the held Linear issue as AGENT HUMAN ANSWERED. Posted by the human's own agent on their behalf, or by the held runtime once it detects the thread answer? I documented both; confirm the convention.</p></div>
+</section>
+
+</div>
+
+<footer>
+  <b>Open Engine</b> — architecture v2 (canonical) · Bolt, routed by Eos · 2026-07-04<br>
+  Source: Nate Jones, canonical Open Engine v2 (full spec via Dylan's paid subscription) · public framing: natesnewsletter.substack.com/p/ai-agent-handoffs (Jun 26, 2026)<br>
+  Supersedes Paperclip (mothballed 2026-06-29). All 5 postmortem lessons applied. Repo (pending GitHub OAuth): github.com/Motoyuki-Solutions/open-engine
+</footer>
+
+</body>
+</html>
